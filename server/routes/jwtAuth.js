@@ -4,15 +4,14 @@ const pool = require("../db");
 const bcrypt = require("bcrypt");
 const validInfo = require("../middleware/validInfo");
 const jwtGenerator = require("../utils/jwtGenerator");
-const authorize = require("../middleware/authorize");
+const authorisation = require("../middleware/authorisation");
 
-// registration route
+// Registration route \\
 router.post("/register", validInfo, async (req, res) => {
   // desctocture the req.body
   const { email, name, password } = req.body;
 
   try {
-
     // check if user exists in the db
     const user = await pool.query("SELECT * FROM users WHERE user_email = $1", [
       email
@@ -31,13 +30,10 @@ router.post("/register", validInfo, async (req, res) => {
       "INSERT INTO users (user_name, user_email, user_password) VALUES ($1, $2, $3) RETURNING *",
       [name, email, bcryptPassword]
     );
-
-
     // res.json(newUser.rows[0]);
 
-    // generate the jwt token
+    // Generate the jwt token
     const jwtToken = jwtGenerator(newUser.rows[0].user_id);
-
     return res.json({ jwtToken });
 
   } catch (err) {
@@ -46,32 +42,28 @@ router.post("/register", validInfo, async (req, res) => {
   }
 });
 
-// login route
-
+// Login route \\
 router.post("/login", validInfo, async (req, res) => {
   // destrcuture req.body
   const { email, password } = req.body;
 
   try {
-    // check if user exist, and if not we throw an error
-    const user = await pool.query("SELECT * FROM users WHERE user_email = $1", [
-      email
-    ]);
+    // check if user exists, and if they don't exist throw an error
+    const user = await pool.query("SELECT * FROM users WHERE user_email = $1", [email]);
     if (user.rows.length === 0) {
       return res.status(401).json("Email or Password is incorrect");
     }
 
-    // check if incoming password is the same as database password
+    // check if incoming password is the same as database password. if not, throw an error
     const validPassword = await bcrypt.compare(
       password,
       user.rows[0].user_password
     );
-
     if (!validPassword) {
       return res.status(401).json("Email or Password is incorrect");
-    }
+    };
 
-    // // give them the jwt token
+    // give user the jwt token
     const jwtToken = jwtGenerator(user.rows[0].user_id);
     return res.json({ jwtToken });
 
@@ -82,7 +74,7 @@ router.post("/login", validInfo, async (req, res) => {
 });
 
 // check the jwt token is valid on every refresh
-router.get('/is-verify', authorize, async (req, res) => {
+router.get('/is-verify', authorisation, async (req, res) => {
   try {
     res.json(true);
   } catch (err) {

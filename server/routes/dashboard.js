@@ -1,8 +1,8 @@
 const router = require("express").Router();
-const authorize = require("../middleware/authorize");
 const pool = require("../db");
+const authorisation = require("../middleware/authorisation");
 
-router.get("/", authorize, async (req, res) => {
+router.get("/", authorisation, async (req, res) => {
   try {
     // req.user has the payload
     // res.json(req.user);
